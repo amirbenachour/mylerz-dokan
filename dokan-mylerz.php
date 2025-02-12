@@ -4,7 +4,7 @@
  * Plugin URI: https://yourwebsite.com
  * Description: Integrates WooCommerce with Mylerz API for order shipping and AWB PDF generation.
  * Version: 1.0
- * Author: Your Name
+ * Author: amir
  * Author URI: https://yourwebsite.com
  * License: GPL2
  */
