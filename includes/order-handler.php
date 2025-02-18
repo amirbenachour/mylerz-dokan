@@ -13,3 +13,4 @@ function dokan_mylerz_on_order_placed($order_id) {
     // Store the tracking number in order meta
     update_post_meta($order_id, '_mylerz_tracking_number', $response['Value']['Packages'][0]['Pieces'][0]['Barcode']);
 }
+

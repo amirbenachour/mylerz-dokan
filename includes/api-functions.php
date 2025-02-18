@@ -38,7 +38,7 @@ function mylerz_send_order($order_id) {
     // Prepare data for Mylerz
     $order_data = [
         [
-            "WarehouseName" => "Maadi",
+            "WarehouseName" => "TUNIS",
             "PickupDueDate" => date("Y-m-d\TH:i:s"),
             "Package_Serial" => $order_id,
             "Reference" => $order->get_order_number(),
@@ -82,3 +82,4 @@ function mylerz_send_order($order_id) {
 
     return json_decode(wp_remote_retrieve_body($response), true);
 }
+
