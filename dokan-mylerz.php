@@ -77,8 +77,8 @@ function add_test_button_to_wc_orders()
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
-                                console.log("Order Details:", data.data);
-                                alert(JSON.stringify(data.data, null, 2)); // Show details in alert box
+                                let pdfUrl = data.data;
+                                window.open(pdfUrl, "_blank");
                             } else {
                                 alert("Error: " + data.data);
                             }
@@ -182,9 +182,16 @@ function get_wc_order_details()
         ]
     ];
     // $data = json_encode($order_data);
-    dokan_mylerz_on_order_placed($order_id, $data_to_send);
-    wp_send_json_success($data_to_send);
+    $response = dokan_mylerz_on_order_placed($order_id, $data_to_send);
+    $response = mylerz_generate_awb($order_id);
+
+    wp_send_json_success($response);
 }
+
+
+add_action('wp_ajax_get_wc_order_details', 'get_wc_order_details');
+
+
 // function get_wc_order_details()
 // {
 //     if (!isset($_GET['order_id'])) {
@@ -279,4 +286,3 @@ function get_wc_order_details()
 //     wp_send_json_success($order_data);
 //     return $order_data;
 // }
-add_action('wp_ajax_get_wc_order_details', 'get_wc_order_details');

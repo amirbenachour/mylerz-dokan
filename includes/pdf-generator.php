@@ -4,18 +4,25 @@ if (!defined('ABSPATH')) {
 }
 // 
 // Function to get AWB and save PDF
-function mylerz_generate_awb($order_id) {
+function mylerz_generate_awb($order_id)
+{
     $token = mylerz_get_token();
-    if (!$token) return false;
+  
+    if (!$token) {
+        $msg = array("success" => false, "status" => "failed", "msg" => "token unavailable");
+        return json_encode($msg);
+    }
 
     $barcode = get_post_meta($order_id, '_mylerz_tracking_number', true);
-    if (!$barcode) return false;
+    if (!$barcode) {
+        $msg = array("success" => false, "status" => "failed", "msg" => "barcode unavailable");
+        return json_encode($msg);
+    }
 
     $url = "https://integration.tunisia.mylerz.net/api/packages/GetAWB";
     $data = [
         "Barcode" => $barcode,
         "ReferenceNumber" => $order_id,
-        "ParentSubId" => 042
     ];
 
     $response = wp_remote_post($url, [
@@ -28,7 +35,15 @@ function mylerz_generate_awb($order_id) {
 
     $body = json_decode(wp_remote_retrieve_body($response), true);
     $pdfData = base64_decode($body['Value']);
-    $filePath = DOKAN_MYLERZ_PLUGIN_DIR . 'awb-' . $order_id . '.pdf';
+    $year  = date('Y'); // e.g., 2025
+    $month = date('m'); // e.g., 02
+    $day   = date('d'); // e.g., 20
+    $uploadDir = wp_upload_dir(); 
+    $baseDir = $uploadDir['basedir'] . '/facture/' . $year . '/' . $month . '/' . $day . '/';
+    if (!file_exists($baseDir)) {
+        wp_mkdir_p($baseDir); 
+    }
+    $filePath = $baseDir . 'awb-' . $order_id . '.pdf';
     file_put_contents($filePath, $pdfData);
 
     return $filePath;

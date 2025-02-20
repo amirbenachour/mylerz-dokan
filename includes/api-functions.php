@@ -32,7 +32,7 @@ function mylerz_send_order($data) {
     $token = mylerz_get_token();
     if (!$token) return false;
 
-  
+
 
     // Prepare data for Mylerz
     
