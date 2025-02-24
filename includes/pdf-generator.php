@@ -7,16 +7,14 @@ if (!defined('ABSPATH')) {
 function mylerz_generate_awb($order_id)
 {
     $token = mylerz_get_token();
-  
+
     if (!$token) {
-        $msg = array("success" => false, "status" => "failed", "msg" => "token unavailable");
-        return json_encode($msg);
+        return json_encode(["success" => false, "status" => "failed", "msg" => "token unavailable"]);
     }
 
     $barcode = get_post_meta($order_id, '_mylerz_tracking_number', true);
     if (!$barcode) {
-        $msg = array("success" => false, "status" => "failed", "msg" => "barcode unavailable");
-        return json_encode($msg);
+        return json_encode(["success" => false, "status" => "failed", "msg" => "barcode unavailable"]);
     }
 
     $url = "https://integration.tunisia.mylerz.net/api/packages/GetAWB";
@@ -34,17 +32,30 @@ function mylerz_generate_awb($order_id)
     ]);
 
     $body = json_decode(wp_remote_retrieve_body($response), true);
-    $pdfData = base64_decode($body['Value']);
-    $year  = date('Y'); // e.g., 2025
-    $month = date('m'); // e.g., 02
-    $day   = date('d'); // e.g., 20
-    $uploadDir = wp_upload_dir(); 
-    $baseDir = $uploadDir['basedir'] . '/facture/' . $year . '/' . $month . '/' . $day . '/';
-    if (!file_exists($baseDir)) {
-        wp_mkdir_p($baseDir); 
+    
+    if (!$body || !isset($body['Value'])) {
+        return json_encode(["success" => false, "status" => "failed", "msg" => "Invalid API response"]);
     }
-    $filePath = $baseDir . 'awb-' . $order_id . '.pdf';
+
+    $pdfData = base64_decode($body['Value']);
+    $year  = date('Y');
+    $month = date('m');
+    $day   = date('d');
+    $uploadDir = wp_upload_dir();
+    
+    $baseDir = $uploadDir['basedir'] . "/facture/$year/$month/$day/";
+    $baseUrl = $uploadDir['baseurl'] . "/facture/$year/$month/$day/";
+    
+    if (!file_exists($baseDir)) {
+        wp_mkdir_p($baseDir);
+    }
+
+    $fileName = "awb-$order_id.pdf";
+    $filePath = $baseDir . $fileName;
+    $fileUrl = $baseUrl . $fileName;
+
     file_put_contents($filePath, $pdfData);
 
-    return $filePath;
+    return json_encode(["success" => true, "file_url" => $fileUrl]);
 }
+

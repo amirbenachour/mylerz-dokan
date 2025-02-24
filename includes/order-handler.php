@@ -22,3 +22,28 @@ function dokan_mylerz_on_order_placed($order_id, $data)
         return json_encode($msg);
     }
 }
+
+add_action('wp_ajax_dokan_mylerz_send_order', 'dokan_mylerz_send_order');
+add_action('wp_ajax_nopriv_dokan_mylerz_send_order', 'dokan_mylerz_send_order');
+
+function dokan_mylerz_send_order() {
+    if (!isset($_GET['order_id'])) {
+        wp_send_json_error(['message' => 'Invalid order ID']);
+    }
+
+    $order_id = intval($_GET['order_id']);
+    $order = wc_get_order($order_id);
+
+    if (!$order) {
+        wp_send_json_error(['message' => 'Order not found']);
+    }
+
+    // Call your API function to send order data
+    $response = mylerz_send_order($order);
+
+    if ($response['success']) {
+        wp_send_json_success(['message' => 'Order sent successfully']);
+    } else {
+        wp_send_json_error(['message' => 'Error sending order']);
+    }
+}

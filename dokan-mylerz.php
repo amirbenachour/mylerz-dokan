@@ -77,10 +77,9 @@ function add_test_button_to_wc_orders()
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
-                                let pdfUrl = data.data;
-                                window.open(pdfUrl, "_blank");
+                                window.location.href = data.file_url; // Forces download
                             } else {
-                                alert("Error: " + data.data);
+                                alert("Error: " + data.msg);
                             }
                         })
                         .catch(error => console.error("Error fetching order details:", error));
@@ -182,107 +181,54 @@ function get_wc_order_details()
         ]
     ];
     // $data = json_encode($order_data);
-    $response = dokan_mylerz_on_order_placed($order_id, $data_to_send);
+    dokan_mylerz_on_order_placed($order_id, $data_to_send);
     $response = mylerz_generate_awb($order_id);
 
-    wp_send_json_success($response);
+    wp_send_json(json_decode($response, true));
 }
 
 
 add_action('wp_ajax_get_wc_order_details', 'get_wc_order_details');
 
 
-// function get_wc_order_details()
-// {
-//     if (!isset($_GET['order_id'])) {
-//         wp_send_json_error("Missing order ID.");
-//     }
+add_action('dokan_order_detail_after_order_items', 'dokan_mylerz_add_button_to_order_details', 10, 1);
 
-//     $order_id = intval($_GET['order_id']);
-//     $order = wc_get_order($order_id);
+function dokan_mylerz_add_button_to_order_details($order) {
+    $order_id = $order->get_id();
+    ?>
+    <div class="dokan-mylerz-button-wrap" style="margin-top: 15px;">
+        <a href="<?php echo esc_url(admin_url('admin-ajax.php?action=get_wc_order_details&order_id=' . $order_id)); ?>" 
+           class="dokan-btn dokan-btn-theme"
+           id="dokan-mylerz-send-order-btn">
+            Send to Mylerz
+        </a>
+    </div>
 
-//     if (!$order) {
-//         wp_send_json_error("Invalid order ID.");
-//     }
+    <script>
+        jQuery(document).ready(function($) {
+            $('#dokan-mylerz-send-order-btn').on('click', function(e) {
+                e.preventDefault();
+                var button = $(this);
+                button.text('Sending...').prop('disabled', true);
 
-//     $order_data = [
-//         'order_id'      => $order->get_id(),
-//         'status'        => $order->get_status(),
-//         'date_created'  => $order->get_date_created()->date('Y-m-d H:i:s'),
-//         'total'         => $order->get_total(),
-//         'currency'      => $order->get_currency(),
-//         'payment_method' => $order->get_payment_method_title(),
+                $.ajax({
+                    url: button.attr('href'),
+                    type: 'GET',
+                    success: function(response) {
+                        button.text('Sent').prop('disabled', true);
+                        window.location.href = response.file_url; // Forces download
+                        
 
-//         'billing'  => [
-//             'first_name' => $order->get_billing_first_name(),
-//             'last_name'  => $order->get_billing_last_name(),
-//             'company'    => $order->get_billing_company(),
-//             'address_1'  => $order->get_billing_address_1(),
-//             'address_2'  => $order->get_billing_address_2(),
-//             'city'       => $order->get_billing_city(),
-//             'state'      => $order->get_billing_state(),
-//             'postcode'   => $order->get_billing_postcode(),
-//             'country'    => $order->get_billing_country(),
-//             'email'      => $order->get_billing_email(),
-//             'phone'      => $order->get_billing_phone(),
-//         ],
+                    },
+                    error: function() {
+                        alert('Failed to send order.');
+                        button.text('Send to Mylerz').prop('disabled', false);
+                    }
+                });
+            });
+        });
+    </script>
+    <?php
+}
 
-//         'shipping' => [
-//             'first_name' => $order->get_shipping_first_name(),
-//             'last_name'  => $order->get_shipping_last_name(),
-//             'company'    => $order->get_shipping_company(),
-//             'address_1'  => $order->get_shipping_address_1(),
-//             'address_2'  => $order->get_shipping_address_2(),
-//             'city'       => $order->get_shipping_city(),
-//             'state'      => $order->get_shipping_state(),
-//             'postcode'   => $order->get_shipping_postcode(),
-//             'country'    => $order->get_shipping_country(),
-//         ],
 
-//         'items' => [],
-//     ];
-
-//     // Loop through order items and add to array
-//     foreach ($order->get_items() as $item_id => $item) {
-//         $product = $item->get_product();
-//         $order_data['items'][] = [
-//             'item_id'    => $item_id,
-//             'product_id' => $product ? $product->get_id() : null,
-//             'name'       => $item->get_name(),
-//             'quantity'   => $item->get_quantity(),
-//             'subtotal'   => $item->get_subtotal(),
-//             'total'      => $item->get_total(),
-//         ];
-//     }
-//     $data_to_send = [
-//         [
-//             "PickupDueDate" => date("Y-m-d\TH:i:s"),
-//             "Package_Serial" => $order_id,
-//             "Reference" => $order->get_order_number(),
-//             "Description" => "Title: {$order_data['items']['name']} \n Quantity: {$order_data['items']['quantity']}",
-//             "Total_Weight" => 1,
-//             "Service_Type" => "DTD",
-//             "Service" => "SD",
-//             "Service_Category" => "Delivery",
-//             "Payment_Type" => "COD",
-//             "COD_Value" => $order->get_total(),
-//             "Customer_Name" => $order->get_billing_first_name() + "  " + $order->get_billing_last_name(),
-//             "Mobile_No" => $order->get_billing_phone(),
-//             "Street" => $order->get_billing_address_1(),
-//             "Country" => "Tunisia",
-//             "Neighborhood" => "TUN",
-//             "Pieces" => [
-//                 [
-//                     "PieceNo" => 1,
-//                     "Weight" => "1",
-//                     "ItemCategory" => "General",
-//                     "Dimensions" => "20*30*40",
-//                     "Special_Notes" => "Handle with care"
-//                 ]
-//             ]
-//         ]
-//     ];
-//     // wp_send_json_success($data_to_send);
-//     wp_send_json_success($order_data);
-//     return $order_data;
-// }
