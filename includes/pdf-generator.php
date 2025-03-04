@@ -4,7 +4,7 @@ if (!defined('ABSPATH')) {
 }
 // 
 // Function to get AWB and save PDF
-function mylerz_generate_awb($order_id)
+function mylerz_generate_awb($order_id, $barcode)
 {
     $token = mylerz_get_token();
 
@@ -12,10 +12,10 @@ function mylerz_generate_awb($order_id)
         return json_encode(["success" => false, "status" => "failed", "msg" => "token unavailable"]);
     }
 
-    $barcode = get_post_meta($order_id, '_mylerz_tracking_number', true);
-    if (!$barcode) {
-        return json_encode(["success" => false, "status" => "failed", "msg" => "barcode unavailable"]);
-    }
+    // $barcode = get_post_meta($order_id, '_mylerz_tracking_number', true);
+    // if (!$barcode) {
+    //     return json_encode(["success" => false, "status" => "failed", "msg" => "barcode unavailable"]);
+    // }
 
     $url = "https://integration.tunisia.mylerz.net/api/packages/GetAWB";
     $data = [

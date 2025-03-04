@@ -86,7 +86,7 @@ function add_test_button_to_wc_orders()
                 });
             });
         </script>
-<?php
+    <?php
     }
 }
 add_action('admin_footer', 'add_test_button_to_wc_orders');
@@ -141,23 +141,38 @@ function get_wc_order_details()
         'items' => [],
     ];
 
+    // Collect all order items in description
+    $description = "";
     foreach ($order->get_items() as $item_id => $item) {
         $product = $item->get_product();
+        $product_name = $item->get_name();
+        $quantity = $item->get_quantity();
+        
+        // Add item details to description
+        $description .= "Title: {$product_name} \n Quantity: {$quantity} \n";
+        
+        // Store item details
         $order_data['items'][] = [
             'item_id'    => $item_id,
             'product_id' => $product ? $product->get_id() : null,
-            'name'       => $item->get_name(),
-            'quantity'   => $item->get_quantity(),
+            'name'       => $product_name,
+            'quantity'   => $quantity,
             'subtotal'   => $item->get_subtotal(),
             'total'      => $item->get_total(),
         ];
     }
+    // $description= "";
+    // $length = count($order_data['items']);
+    // for ($i = 0; $i++; $i <= $length) {
+    //     $description =$description +" Title: {$order_data['items'][$i]['name']} \n Quantity: {$order_data['items'][$i]['quantity']} \n";
+    // }
+    
     $data_to_send = [
         [
             "PickupDueDate" => date("Y-m-d\TH:i:s"),
             "Package_Serial" => $order_id,
             "Reference" => $order->get_order_number(),
-            "Description" => "Title: {$order_data['items'][0]['name']} \n Quantity: {$order_data['items'][0]['quantity']}",
+            "Description" => $description,
             "Total_Weight" => 1,
             "Service_Type" => "DTD",
             "Service" => "SD",
@@ -181,8 +196,8 @@ function get_wc_order_details()
         ]
     ];
     // $data = json_encode($order_data);
-    dokan_mylerz_on_order_placed($order_id, $data_to_send);
-    $response = mylerz_generate_awb($order_id);
+    $barcode = dokan_mylerz_on_order_placed($order_id, $data_to_send);
+    $response = mylerz_generate_awb($order_id, $barcode);
 
     wp_send_json(json_decode($response, true));
 }
@@ -193,13 +208,14 @@ add_action('wp_ajax_get_wc_order_details', 'get_wc_order_details');
 
 add_action('dokan_order_detail_after_order_items', 'dokan_mylerz_add_button_to_order_details', 10, 1);
 
-function dokan_mylerz_add_button_to_order_details($order) {
+function dokan_mylerz_add_button_to_order_details($order)
+{
     $order_id = $order->get_id();
     ?>
     <div class="dokan-mylerz-button-wrap" style="margin-top: 15px;">
-        <a href="<?php echo esc_url(admin_url('admin-ajax.php?action=get_wc_order_details&order_id=' . $order_id)); ?>" 
-           class="dokan-btn dokan-btn-theme"
-           id="dokan-mylerz-send-order-btn">
+        <a href="<?php echo esc_url(admin_url('admin-ajax.php?action=get_wc_order_details&order_id=' . $order_id)); ?>"
+            class="dokan-btn dokan-btn-theme"
+            id="dokan-mylerz-send-order-btn">
             Send to Mylerz
         </a>
     </div>
@@ -216,8 +232,8 @@ function dokan_mylerz_add_button_to_order_details($order) {
                     type: 'GET',
                     success: function(response) {
                         button.text('Sent').prop('disabled', true);
+
                         window.location.href = response.file_url; // Forces download
-                        
 
                     },
                     error: function() {
@@ -228,7 +244,5 @@ function dokan_mylerz_add_button_to_order_details($order) {
             });
         });
     </script>
-    <?php
+<?php
 }
-
-
