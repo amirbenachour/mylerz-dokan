@@ -49,3 +49,20 @@ function mylerz_send_order($data) {
     return json_decode(wp_remote_retrieve_body($response), true);
 }
 
+function mylerz_send_vendor($data) {
+    $token = mylerz_get_token();
+    if (!$token) return false;
+
+    // Prepare data for Mylerz
+    
+    $url = "https://integration.tunisia.mylerz.net/api/Orders/AddWarehouse";
+    $response = wp_remote_post($url, [
+        'body' => json_encode($data),
+        'headers' => [
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer ' . $token
+        ]
+    ]);
+
+    return json_decode(wp_remote_retrieve_body($response), true);
+}

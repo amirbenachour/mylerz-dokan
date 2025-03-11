@@ -246,3 +246,142 @@ function dokan_mylerz_add_button_to_order_details($order)
     </script>
 <?php
 }
+
+/**
+ * Add a button to the Dokan vendor page to get vendor info.
+ */
+/*
+function mylerz_print_screen_id_to_console() {
+    ?>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("Current Screen ID: <?php echo get_current_screen()->id; ?>");
+        });
+    </script>
+    <?php
+}
+add_action('admin_footer', 'mylerz_print_screen_id_to_console');
+*/
+
+function add_test_button_to_vendors()
+{
+    $screen = get_current_screen();
+
+    if ($screen && $screen->id === 'toplevel_page_dokan') { 
+?>
+        <script type="text/javascript">
+            document.addEventListener("DOMContentLoaded", function() {
+                var button = document.createElement("a");
+                button.href = "#";
+                button.id = "fetch_vendor_details";
+                button.className = "button button-primary";
+                button.textContent = "Get Vendor Details";
+                button.style.marginLeft = "10px";
+
+                var actionContainer = document.querySelector(".dokan-vendor-single");
+                if (actionContainer) {
+                    actionContainer.appendChild(button);
+                }
+
+                button.addEventListener("click", function(event) {
+                    event.preventDefault();
+
+                    const url = new URL(window.location.href);
+                    const vendorId = url.hash.split("/").pop();
+
+                    if (!vendorId) {
+                        alert("Vendor ID not found!");
+                        return;
+                    }
+
+                    fetch(ajaxurl, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/x-www-form-urlencoded",
+                        },
+                        body: new URLSearchParams({
+                            action: "get_vendor_details",
+                            vendor_id: vendorId,
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(
+                                "Shop Name: " + data.data.store_name + "\n" +
+                                "Email: " + data.data.email + "\n" +
+                                "Address: " + (data.data.address || "N/A") + "\n" +
+                                "Phone: " + (data.data.phone || "N/A")
+                            );
+                        } else {
+                            alert("Error: " + data.data);
+                        }
+                    })
+                    .catch(error => console.error("Error:", error));
+                });
+            });
+        </script>
+    <?php
+    }
+}
+add_action('admin_footer', 'add_test_button_to_vendors');
+
+function get_vendor_details_callback() {
+    if (!isset($_POST['vendor_id'])) {
+        wp_send_json_error("Vendor ID is missing");
+    }
+
+    $vendor_id = intval($_POST['vendor_id']);
+    $vendor = dokan()->vendor->get($vendor_id);
+
+    if (!$vendor) {
+        wp_send_json_error("Vendor not found");
+    }
+
+    // Get vendor's shop information
+    $shop_info = $vendor->get_shop_info();
+
+    // Extract address and phone number
+
+    // Format the address
+    $address = '';
+    if (isset($shop_info['address']) && is_array($shop_info['address'])) {
+        $address_parts = [];
+        if (!empty($shop_info['address']['street_1'])) {
+            $address_parts[] = $shop_info['address']['street_1'];
+        }
+        if (!empty($shop_info['address']['street_2'])) {
+            $address_parts[] = $shop_info['address']['street_2'];
+        }
+        if (!empty($shop_info['address']['city'])) {
+            $address_parts[] = $shop_info['address']['city'];
+        }
+        if (!empty($shop_info['address']['state'])) {
+            $address_parts[] = $shop_info['address']['state'];
+        }
+        if (!empty($shop_info['address']['zip'])) {
+            $address_parts[] = $shop_info['address']['zip'];
+        }
+        if (!empty($shop_info['address']['country'])) {
+            $address_parts[] = $shop_info['address']['country'];
+        }
+        $address = implode(', ', $address_parts);
+    }
+
+    $phone = isset($shop_info['phone']) ? $shop_info['phone'] : '';
+
+    $vendor_details = [
+        'store_name' => $vendor->get_shop_name(),
+        'email'      => $vendor->get_email(),
+        'address'    => $address,
+        'phone'      => $phone,
+    ];
+
+    wp_send_json_success($vendor_details);
+}
+
+add_action('wp_ajax_get_vendor_details', 'get_vendor_details_callback');
+
+
+
+
