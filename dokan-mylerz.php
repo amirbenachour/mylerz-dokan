@@ -147,10 +147,10 @@ function get_wc_order_details()
         $product = $item->get_product();
         $product_name = $item->get_name();
         $quantity = $item->get_quantity();
-        
+
         // Add item details to description
         $description .= "Title: {$product_name} \n Quantity: {$quantity} \n";
-        
+
         // Store item details
         $order_data['items'][] = [
             'item_id'    => $item_id,
@@ -166,7 +166,7 @@ function get_wc_order_details()
     // for ($i = 0; $i++; $i <= $length) {
     //     $description =$description +" Title: {$order_data['items'][$i]['name']} \n Quantity: {$order_data['items'][$i]['quantity']} \n";
     // }
-    
+
     $data_to_send = [
         [
             "PickupDueDate" => date("Y-m-d\TH:i:s"),
@@ -244,7 +244,7 @@ function dokan_mylerz_add_button_to_order_details($order)
             });
         });
     </script>
-<?php
+    <?php
 }
 
 /**
@@ -267,8 +267,8 @@ function add_test_button_to_vendors()
 {
     $screen = get_current_screen();
 
-    if ($screen && $screen->id === 'toplevel_page_dokan') { 
-?>
+    if ($screen && $screen->id === 'toplevel_page_dokan') {
+    ?>
         <script type="text/javascript">
             document.addEventListener("DOMContentLoaded", function() {
                 var button = document.createElement("a");
@@ -295,38 +295,31 @@ function add_test_button_to_vendors()
                     }
 
                     fetch(ajaxurl, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/x-www-form-urlencoded",
-                        },
-                        body: new URLSearchParams({
-                            action: "get_vendor_details",
-                            vendor_id: vendorId,
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/x-www-form-urlencoded",
+                            },
+                            body: new URLSearchParams({
+                                action: "get_vendor_details",
+                                vendor_id: vendorId,
+                            })
                         })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            alert(
-                                "Shop Name: " + data.data.store_name + "\n" +
-                                "Email: " + data.data.email + "\n" +
-                                "Address: " + (data.data.address || "N/A") + "\n" +
-                                "Phone: " + (data.data.phone || "N/A")
-                            );
-                        } else {
-                            alert("Error: " + data.data);
-                        }
-                    })
-                    .catch(error => console.error("Error:", error));
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log(data);
+
+                        })
+                        .catch(error => console.error("Error:", error));
                 });
             });
         </script>
-    <?php
+<?php
     }
 }
 add_action('admin_footer', 'add_test_button_to_vendors');
 
-function get_vendor_details_callback() {
+function get_vendor_details_callback()
+{
     if (!isset($_POST['vendor_id'])) {
         wp_send_json_error("Vendor ID is missing");
     }
@@ -338,12 +331,9 @@ function get_vendor_details_callback() {
         wp_send_json_error("Vendor not found");
     }
 
-    // Get vendor's shop information
     $shop_info = $vendor->get_shop_info();
 
-    // Extract address and phone number
 
-    // Format the address
     $address = '';
     if (isset($shop_info['address']) && is_array($shop_info['address'])) {
         $address_parts = [];
@@ -357,31 +347,29 @@ function get_vendor_details_callback() {
             $address_parts[] = $shop_info['address']['city'];
         }
         if (!empty($shop_info['address']['state'])) {
-            $address_parts[] = $shop_info['address']['state'];
+            $state = $shop_info['address']['state'];
         }
         if (!empty($shop_info['address']['zip'])) {
-            $address_parts[] = $shop_info['address']['zip'];
-        }
-        if (!empty($shop_info['address']['country'])) {
-            $address_parts[] = $shop_info['address']['country'];
+            $zip = $shop_info['address']['zip'];
         }
         $address = implode(', ', $address_parts);
     }
 
     $phone = isset($shop_info['phone']) ? $shop_info['phone'] : '';
 
-    $vendor_details = [
-        'store_name' => $vendor->get_shop_name(),
-        'email'      => $vendor->get_email(),
-        'address'    => $address,
-        'phone'      => $phone,
-    ];
+    $vendor_details =  [[
+        'Name'        => $vendor->get_shop_name(),
+        'ContactEmail' => $vendor->get_email(),
+        'Address'     => $address,
+        'ZoneCode'       => "TUN",
+        'Zip'         => $zip,
+        'PhoneNumber'       => $phone,
+        "ContactName" => $vendor->get_shop_name(),
+    ]];
 
-    wp_send_json_success($vendor_details);
+    $response = mylerz_send_vendor($vendor_details);
+
+    wp_send_json_success($response);
 }
 
 add_action('wp_ajax_get_vendor_details', 'get_vendor_details_callback');
-
-
-
-
